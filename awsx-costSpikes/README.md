@@ -1,4 +1,4 @@
-- [What is awsx-costData](#awsx-getCostData)
+- [What is awsx-costSpike](#awsx-GetCostSpike)
 - [How to build / Test](#how-to-build--test)
 - [what it does ](#what-it-does)
 - [command input](#command-input)
@@ -7,7 +7,7 @@
 
 # awsx-getCostData
 
-This is a plugin subcommand for awsx cli ( https://github.com/Appkube-awsx/awsx#awsx ) cli.
+This is a plugin command for awsx cli ( https://github.com/Appkube-awsx/awsx#awsx ) cli.
 
 For details about awsx commands and how its used in Appkube platform , please refer to the diagram below:
 
@@ -17,11 +17,11 @@ For details about awsx commands and how its used in Appkube platform , please re
 
 This plugin subcommand will implement the Apis' related to costData for all services , primarily the following API's:
 
-- CostData
+- CostSpike
 
 In cost data you can receive reports that break down your costs by the hour, day, or month, by product or product resource, or by tags that you define yourself.
 
-This cli collect data from metric / logs / traces of the costData for all services and produce the cost data in a form that Appkube Platform expects.
+This cli collect data from metric / logs / traces of the costSpike for all services and produce the cost data in a form that Appkube Platform expects.
 
 This CLI , interacts with other Appkube services like Appkube vault , Appkube cloud CMDB so that it can talk with cloud services as well as filter and sort the information in terms of product/services, so that Appkube platform gets the data that it expects from the cli.
 
@@ -30,24 +30,24 @@ This CLI , interacts with other Appkube services like Appkube vault , Appkube cl
 Please refer to the instruction -
 https://github.com/Appkube-awsx/awsx#how-to-write-a-plugin-subcommand
 
-It has detailed instruction on how to write a subcommand plugin , build / test / debug / publish and integrate into the main commmand.
+It has detailed instruction on how to write a command plugin , build/test/debug/ publish and integrate into the main commmand.
 
 # How to build / Test
 
             go run main.go
-                - Program will print Calling aws-costData on console
+                - Program will print Calling aws-costSpike on console
 
             Another way of testing is by running go install command
             go install
-            - go install command creates an exe with the name of the module (e.g. awsx-getCostData) and save it in the GOPATH
+            - go install command creates an exe with the name of the module (e.g. awsx-getCostSpike) and save it in the GOPATH
             - Now we can execute this command on command prompt as below
 
-            awsx-getCostData --zone=us-east-1 --accessKey=xxxxxxxxxx --secretKey=xxxxxxxxxx --crossAccountRoleArn=xxxxxxxxxx  --externalId=xxxxxxxxxx
+            awsx-getCostSpike --zone=us-east-1 --accessKey=xxxxxxxxxx --secretKey=xxxxxxxxxx --crossAccountRoleArn=xxxxxxxxxx  --externalId=xxxxxxxxxx
 
 # what it does
 
 This command implement the following functionalities -
-getCostData - It will get the cost data for specific service and for all service also.
+GetCostSpike - It will get the cost spike data for specific service and for all service also.
 
 # command input
 
@@ -64,38 +64,23 @@ getCostData - It will get the cost data for specific service and for all service
 
 # command output
 
-{[
-Keys: ["AWS WAF","us-east-1"],
-Metrics: {
-AmortizedCost: {
-Amount: "-6.93950583",
-Unit: "USD"
-},
-BlendedCost: {
-Amount: "-6.93950583",
-Unit: "USD"
-},
-UnblendedCost: {
-Amount: "-6.93950583",
-Unit: "USD"
-},
-NetAmortizedCost: {
-Amount: "-6.93950583",
-Unit: "USD"
-}
-}
-]},
+Cost Spike for :ALL
+|2023-01-01| 55.666005 | +255.730920% |
+|2023-01-02| 13.449211 | -75.839454% |
+|2023-01-03| 9.369190 | -30.336510% |
+|2023-01-04| 8.723544 | -6.891160% |
+|2023-01-05| 8.692741 | -0.353097% |
 
 # How to run
 
 From main awsx command , it is called as follows:
 
 ```bash
-awsx getCostData --zone=us-east-1 --accessKey=<> --secretKey=<> --crossAccountRoleArn=<>  --externalId=<>  --granularity=DAILY --startDate=2023-03-01 --endDate=2023-03-10 --serviceName="ALL"
+awsx GetCostSpike --zone=us-east-1 --accessKey=<> --secretKey=<> --crossAccountRoleArn=<>  --externalId=<> --granularity=DAILY --startDate=2023-03-01 --endDate=2023-03-10 --serviceName="ALL"
 ```
 
 If you build it locally , you can simply run it as standalone command as
 
 ```bash
-  go run main.go  getCostData--zone=us-east-1 --accessKey=<> --secretKey=<> --crossAccountRoleArn=<>  --externalId=<>  --granularity=DAILY --startDate=2023-03-01 --endDate=2023-03-10 --serviceName="ALL"
+  go run main.go  GetCostSpike--zone=us-east-1 --accessKey=<> --secretKey=<> --crossAccountRoleArn=<>  --externalId=<>  --granularity=DAILY --startDate=2023-03-01 --endDate=2023-03-10 --serviceName="ALL"
 ```

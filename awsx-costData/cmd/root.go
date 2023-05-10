@@ -47,6 +47,7 @@ var AwsxCostDataCmd = &cobra.Command{
 func getClusterCostDetail(region string, crossAccountRoleArn string, accessKey string, secretKey string, externalId string, serviceName string, granularity string, startDate string, endDate string) (*costexplorer.GetCostAndUsageOutput, error) {
 	log.Println("Getting cost data for all service")
 	costClient := client.GetCostClient(region, crossAccountRoleArn, accessKey, secretKey, externalId, serviceName)
+	log.Println("Cost Data for:" + serviceName)
     
 	sName := serviceName
 	var filter = &costexplorer.Expression{
