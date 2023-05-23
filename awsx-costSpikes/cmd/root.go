@@ -15,7 +15,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var AwsxClusterMetadataCmd = &cobra.Command{
+var AwsxCostSpikeCmd = &cobra.Command{
 	Use:   "get Cost Spikes Data Details",
 	Short: "get Cost Spikes Data Details command gets resource counts",
 	Long:  `get Cost Spikes Data Details command gets resource counts details of an AWS account`,
@@ -48,7 +48,6 @@ var AwsxClusterMetadataCmd = &cobra.Command{
 func wrapperCostSpike(region string, crossAccountRoleArn string, acKey string, secKey string, externalId string, serviceName string, granularity string, startDate string, endDate string) (string, error) {
 	costClient := client.GetCostClient(region, crossAccountRoleArn, acKey, secKey, externalId, serviceName)
 	fmt.Println("Cost Spike for :" + serviceName)
-
 
 	switch granularity {
 	case "DAILY":
@@ -234,7 +233,6 @@ func ServiceCostDetails(region string, crossAccountRoleArn string, accessKey str
 		},
 	}
 
-
 	if serviceName == "ALL" || serviceName == "" {
 		sName = ""
 		filter = &costexplorer.Expression{
@@ -279,7 +277,7 @@ func ServiceCostDetails(region string, crossAccountRoleArn string, accessKey str
 			},
 		},
 		Granularity: aws.String(granularity),
-		Filter:      filter, 
+		Filter:      filter,
 	}
 
 	costData, err := costClient.GetCostAndUsage(input)
@@ -401,7 +399,7 @@ func convertCostDataToFloat(CostData string) float64 {
 }
 
 func Execute() {
-	err := AwsxClusterMetadataCmd.Execute()
+	err := AwsxCostSpikeCmd.Execute()
 	if err != nil {
 		log.Fatal("There was some error while executing the CLI: ", err)
 		os.Exit(1)
@@ -410,16 +408,16 @@ func Execute() {
 
 func init() {
 
-	AwsxClusterMetadataCmd.PersistentFlags().String("vaultUrl", "", "vault end point")
-	AwsxClusterMetadataCmd.PersistentFlags().String("accountId", "", "aws account number")
-	AwsxClusterMetadataCmd.PersistentFlags().String("zone", "", "aws region")
-	AwsxClusterMetadataCmd.PersistentFlags().String("accessKey", "", "aws access key")
-	AwsxClusterMetadataCmd.PersistentFlags().String("secretKey", "", "aws secret key")
-	AwsxClusterMetadataCmd.PersistentFlags().String("crossAccountRoleArn", "", "aws crossAccountRoleArn is required")
-	AwsxClusterMetadataCmd.PersistentFlags().String("externalId", "", "aws external id ")
-	AwsxClusterMetadataCmd.PersistentFlags().String("serviceName", "", "aws serviceName auth")
-	AwsxClusterMetadataCmd.PersistentFlags().String("granularity", "", "aws granularity")
-	AwsxClusterMetadataCmd.PersistentFlags().String("startDate", "", "aws startDate ")
-	AwsxClusterMetadataCmd.PersistentFlags().String("endDate", "", "aws endDate auth")
+	AwsxCostSpikeCmd.PersistentFlags().String("vaultUrl", "", "vault end point")
+	AwsxCostSpikeCmd.PersistentFlags().String("accountId", "", "aws account number")
+	AwsxCostSpikeCmd.PersistentFlags().String("zone", "", "aws region")
+	AwsxCostSpikeCmd.PersistentFlags().String("accessKey", "", "aws access key")
+	AwsxCostSpikeCmd.PersistentFlags().String("secretKey", "", "aws secret key")
+	AwsxCostSpikeCmd.PersistentFlags().String("crossAccountRoleArn", "", "aws crossAccountRoleArn is required")
+	AwsxCostSpikeCmd.PersistentFlags().String("externalId", "", "aws external id ")
+	AwsxCostSpikeCmd.PersistentFlags().String("serviceName", "", "aws serviceName auth")
+	AwsxCostSpikeCmd.PersistentFlags().String("granularity", "", "aws granularity")
+	AwsxCostSpikeCmd.PersistentFlags().String("startDate", "", "aws startDate ")
+	AwsxCostSpikeCmd.PersistentFlags().String("endDate", "", "aws endDate auth")
 
 }
