@@ -6,19 +6,20 @@ import (
 
 	"github.com/Appkube-awsx/awsx-costData/authenticator"
 	"github.com/Appkube-awsx/awsx-costData/client"
+	"github.com/Appkube-awsx/awsx-costData/cmd/costcmd"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/costexplorer"
 	"github.com/spf13/cobra"
 )
 
-//  awsxCostAData Cmd represents the base Command
+// awsxCostAData Cmd represents the base Command
 var AwsxCostDataCmd = &cobra.Command{
-	Use:   "get Cost Data Details",
+	Use:   "getCostData",
 	Short: "get Cost Data Details command gets resource counts",
 	Long:  `get Cost Data Details command gets resource counts details of an AWS account`,
 
 	Run: func(cmd *cobra.Command, args []string) {
-        // Required flag for cost Data
+		// Required flag for cost Data
 		log.Println("Command get Cost Data started")
 		vaultUrl := cmd.PersistentFlags().Lookup("vaultUrl").Value.String()
 		accountNo := cmd.PersistentFlags().Lookup("accountId").Value.String()
@@ -34,21 +35,23 @@ var AwsxCostDataCmd = &cobra.Command{
 		// Retrieve value of start and end Date
 		startDate := cmd.PersistentFlags().Lookup("startDate").Value.String()
 		endDate := cmd.PersistentFlags().Lookup("endDate").Value.String()
-        
+
 		authFlag := authenticator.AuthenticateData(vaultUrl, accountNo, region, acKey, secKey, crossAccountRoleArn, externalId, serviceName)
-         
+
 		if authFlag {
 			getClusterCostDetail(region, crossAccountRoleArn, acKey, secKey, externalId, serviceName, granularity, startDate, endDate)
 		}
 	},
 }
-//  function to get cost for all service for the given time period
+
+//	function to get cost for all service for the given time period
+//
 // json.Unmarshal
 func getClusterCostDetail(region string, crossAccountRoleArn string, accessKey string, secretKey string, externalId string, serviceName string, granularity string, startDate string, endDate string) (*costexplorer.GetCostAndUsageOutput, error) {
 	log.Println("Getting cost data for all service")
 	costClient := client.GetCostClient(region, crossAccountRoleArn, accessKey, secretKey, externalId, serviceName)
 	log.Println("Cost Data for:" + serviceName)
-    
+
 	sName := serviceName
 	var filter = &costexplorer.Expression{
 		And: []*costexplorer.Expression{
@@ -136,8 +139,11 @@ func Execute() {
 		os.Exit(1)
 	}
 }
-//  initialization the above flags which we used 
+
+// initialization the above flags which we used
 func init() {
+
+	AwsxCostDataCmd.AddCommand(costcmd.GetCostSpikeCmd)
 
 	AwsxCostDataCmd.PersistentFlags().String("vaultUrl", "", "vault end point")
 	AwsxCostDataCmd.PersistentFlags().String("accountId", "", "aws account number")

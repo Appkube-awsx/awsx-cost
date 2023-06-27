@@ -1,53 +1,58 @@
-package cmd
+package costcmd
 
 import (
 	"fmt"
 	"log"
 	"math"
-	"os"
 	"strconv"
 	"time"
 
-	"github.com/Appkube-awsx/awsx-costSpikes/authenticator"
-	"github.com/Appkube-awsx/awsx-costSpikes/client"
+	"github.com/Appkube-awsx/awsx-costData/authenticator"
+	"github.com/Appkube-awsx/awsx-costData/client"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/costexplorer"
 	"github.com/spf13/cobra"
 )
 
-var AwsxCostSpikeCmd = &cobra.Command{
-	Use:   "get Cost Spikes Data Details",
-	Short: "get Cost Spikes Data Details command gets resource counts",
-	Long:  `get Cost Spikes Data Details command gets resource counts details of an AWS account`,
-
+var GetCostSpikeCmd = &cobra.Command{
+	Use:   "GetCostSpikes",
+	Short: "Get cost Spike",
+	Long:  `Retrieve cost spike data from AWS Cost Explorer`,
 	Run: func(cmd *cobra.Command, args []string) {
+		// Retrieve values of other flags as before
+		vaultUrl := cmd.Parent().PersistentFlags().Lookup("vaultUrl").Value.String()
+		accountNo := cmd.Parent().PersistentFlags().Lookup("accountId").Value.String()
+		region := cmd.Parent().PersistentFlags().Lookup("zone").Value.String()
+		acKey := cmd.Parent().PersistentFlags().Lookup("accessKey").Value.String()
+		secKey := cmd.Parent().PersistentFlags().Lookup("secretKey").Value.String()
 
-		log.Println("Command get Cost Spikes Data started")
-		vaultUrl := cmd.PersistentFlags().Lookup("vaultUrl").Value.String()
-		accountNo := cmd.PersistentFlags().Lookup("accountId").Value.String()
-		region := cmd.PersistentFlags().Lookup("zone").Value.String()
-		acKey := cmd.PersistentFlags().Lookup("accessKey").Value.String()
-		secKey := cmd.PersistentFlags().Lookup("secretKey").Value.String()
-		crossAccountRoleArn := cmd.PersistentFlags().Lookup("crossAccountRoleArn").Value.String()
-		externalId := cmd.PersistentFlags().Lookup("externalId").Value.String()
-		serviceName := cmd.PersistentFlags().Lookup("serviceName").Value.String()
-		granularity := cmd.PersistentFlags().Lookup("granularity").Value.String()
-		startDate := cmd.PersistentFlags().Lookup("startDate").Value.String()
-		endDate := cmd.PersistentFlags().Lookup("endDate").Value.String()
+		crossAccountRoleArn := cmd.Parent().PersistentFlags().Lookup("crossAccountRoleArn").Value.String()
+		externalId := cmd.Parent().PersistentFlags().Lookup("externalId").Value.String()
 
+		serviceName, err := cmd.Flags().GetString("serviceName")
+		// Retrieve value of granularity flag
+		granularity, err := cmd.Flags().GetString("granularity")
+
+		// Retireve values of start and end date/time
+		startDate, err := cmd.Flags().GetString("startDate")
+		endDate, err := cmd.Flags().GetString("endDate")
+
+		if err != nil {
+			log.Fatalln("Error: in getting granularity flag value", err)
+		}
 		authFlag := authenticator.AuthenticateData(vaultUrl, accountNo, region, acKey, secKey, crossAccountRoleArn, externalId, serviceName)
 
 		if authFlag {
-			wrapperCostSpike(region, crossAccountRoleArn, acKey, secKey, externalId, serviceName, granularity, startDate, endDate)
+
+			wrapperCostSpike(region, crossAccountRoleArn, acKey, secKey, externalId, serviceName, granularity, startDate, endDate, "Amazon Elastic Container Service for Kubernetes")
 		}
 	},
 }
 
-// json.Unmarshal
 // Wrapper function to get cost, spike percentage and print them.
-func wrapperCostSpike(region string, crossAccountRoleArn string, acKey string, secKey string, externalId string, serviceName string, granularity string, startDate string, endDate string) (string, error) {
+func wrapperCostSpike(region string, crossAccountRoleArn string, acKey string, secKey string, externalId string, serviceName string, granularity string, startDate string, endDate string, service string) (string, error) {
 	costClient := client.GetCostClient(region, crossAccountRoleArn, acKey, secKey, externalId, serviceName)
-	fmt.Println("Cost Spike for :" + serviceName)
+	fmt.Println("cost spike for :" + serviceName)
 
 	switch granularity {
 	case "DAILY":
@@ -67,7 +72,7 @@ func wrapperCostSpike(region string, crossAccountRoleArn string, acKey string, s
 		for d := startDate; d.Before(endDate.AddDate(0, 0, 1)); d = d.AddDate(0, 0, 1) {
 			prevDate := d.AddDate(0, 0, -1)
 			// fmt.Printf("%s (%s)\n", d.Format("2006-01-02"), prevDate.Format("2006-01-02"))
-			CostSpikes(region, crossAccountRoleArn, acKey, secKey, externalId, serviceName, granularity, prevDate.Format("2006-01-02"), d.Format("2006-01-02"), costClient)
+			CostSpikes(region, crossAccountRoleArn, acKey, secKey, externalId, serviceName, granularity, prevDate.Format("2006-01-02"), d.Format("2006-01-02"), costClient, service)
 		}
 		return "", nil
 
@@ -91,7 +96,7 @@ func wrapperCostSpike(region string, crossAccountRoleArn string, acKey string, s
 			}
 			prevDate := d.AddDate(0, -1, 0)
 			// fmt.Printf("%s (%s)\n", d.Format("2006-01-02"), prevDate.Format("2006-01-02"))
-			CostSpikes(region, crossAccountRoleArn, acKey, secKey, externalId, serviceName, granularity, prevDate.Format("2006-01-02"), d.Format("2006-01-02"), costClient)
+			CostSpikes(region, crossAccountRoleArn, acKey, secKey, externalId, serviceName, granularity, prevDate.Format("2006-01-02"), d.Format("2006-01-02"), costClient, service)
 		}
 		return "", nil
 
@@ -112,7 +117,7 @@ func wrapperCostSpike(region string, crossAccountRoleArn string, acKey string, s
 		for d := startDateTime; d.Before(endDateTime); d = d.Add(time.Hour) {
 			prevHour := d.Add(-time.Hour)
 			// fmt.Println(prevHour.Format(layout), d.Format(layout))
-			CostSpikes(region, crossAccountRoleArn, acKey, secKey, externalId, granularity, serviceName, prevHour.Format("2006-01-02T15:04:05Z"), d.Format("2006-01-02T15:04:05Z"), costClient)
+			CostSpikes(region, crossAccountRoleArn, acKey, secKey, externalId, serviceName, granularity, prevHour.Format("2006-01-02T15:04:05Z"), d.Format("2006-01-02T15:04:05Z"), costClient, service)
 		}
 
 		return "", nil
@@ -124,9 +129,9 @@ func wrapperCostSpike(region string, crossAccountRoleArn string, acKey string, s
 }
 
 // Function to do the cost comparison.
-func CostSpikes(region string, crossAccountRoleArn string, accessKey string, secretKey string, externalId string, serviceName string, granularity string, startDateTime string, endDateTime string, costClient *costexplorer.CostExplorer) (string, error) {
+func CostSpikes(region string, crossAccountRoleArn string, accessKey string, secretKey string, externalId string, serviceName string, granularity string, startDateTime string, endDateTime string, costClient *costexplorer.CostExplorer, service string) (string, error) {
 	// Get cost data for latest time period
-	startCostData, err := ServiceCostDetails(region, crossAccountRoleArn, accessKey, secretKey, externalId, serviceName, granularity, startDateTime, endDateTime, costClient)
+	startCostData, err := ServiceCostDetails(region, crossAccountRoleArn, accessKey, secretKey, externalId, serviceName, granularity, startDateTime, endDateTime, costClient, service)
 	if err != nil {
 		log.Fatalln("Error: in getting cost data for start date", err)
 		return "", err
@@ -143,7 +148,7 @@ func CostSpikes(region string, crossAccountRoleArn string, accessKey string, sec
 			log.Fatalln("Error: in getting previous time period date", err)
 			return "", err
 		}
-		endCostData, err := ServiceCostDetails(region, crossAccountRoleArn, accessKey, secretKey, externalId, serviceName, granularity, previousStartDateTime, previousEndDateTime, costClient)
+		endCostData, err := ServiceCostDetails(region, crossAccountRoleArn, accessKey, secretKey, externalId, serviceName, granularity, previousStartDateTime, previousEndDateTime, costClient, service)
 		if err != nil {
 			log.Fatalln("Error: in getting cost data for end date", err)
 			return "", err
@@ -151,7 +156,7 @@ func CostSpikes(region string, crossAccountRoleArn string, accessKey string, sec
 		endCost = convertCostDataToFloat(endCostData)
 
 	default:
-		endCostData, err := ServiceCostDetails(region, crossAccountRoleArn, accessKey, secretKey, externalId, serviceName, granularity, endDateTime, endDateTime, costClient)
+		endCostData, err := ServiceCostDetails(region, crossAccountRoleArn, accessKey, secretKey, externalId, serviceName, granularity, endDateTime, endDateTime, costClient, service)
 		if err != nil {
 			log.Fatalln("Error: in getting cost data for end date", err)
 			return "", err
@@ -185,7 +190,7 @@ func CostSpikes(region string, crossAccountRoleArn string, accessKey string, sec
 }
 
 // Function to get cost for a given service for given time period.
-func ServiceCostDetails(region string, crossAccountRoleArn string, accessKey string, secretKey string, externalId string, serviceName string, granularity string, startDateTime string, endingDateTime string, costClient *costexplorer.CostExplorer) (string, error) {
+func ServiceCostDetails(region string, crossAccountRoleArn string, accessKey string, secretKey string, externalId string, serviceName string, granularity string, startDateTime string, endingDateTime string, costClient *costexplorer.CostExplorer, service string) (string, error) {
 	// costClient := client.GetCostClient(region, crossAccountRoleArn, accessKey, secretKey, externalId)
 
 	// Get endDateTime from startDateTime for DAILY/WEEKLY/HOURLY
@@ -398,26 +403,26 @@ func convertCostDataToFloat(CostData string) float64 {
 	return cost
 }
 
-func Execute() {
-	err := AwsxCostSpikeCmd.Execute()
-	if err != nil {
-		log.Fatal("There was some error while executing the CLI: ", err)
-		os.Exit(1)
-	}
-}
-
 func init() {
+	GetCostSpikeCmd.Flags().StringP("serviceName", "s", "", "serviceName name")
 
-	AwsxCostSpikeCmd.PersistentFlags().String("vaultUrl", "", "vault end point")
-	AwsxCostSpikeCmd.PersistentFlags().String("accountId", "", "aws account number")
-	AwsxCostSpikeCmd.PersistentFlags().String("zone", "", "aws region")
-	AwsxCostSpikeCmd.PersistentFlags().String("accessKey", "", "aws access key")
-	AwsxCostSpikeCmd.PersistentFlags().String("secretKey", "", "aws secret key")
-	AwsxCostSpikeCmd.PersistentFlags().String("crossAccountRoleArn", "", "aws crossAccountRoleArn is required")
-	AwsxCostSpikeCmd.PersistentFlags().String("externalId", "", "aws external id ")
-	AwsxCostSpikeCmd.PersistentFlags().String("serviceName", "", "aws serviceName auth")
-	AwsxCostSpikeCmd.PersistentFlags().String("granularity", "", "aws granularity")
-	AwsxCostSpikeCmd.PersistentFlags().String("startDate", "", "aws startDate ")
-	AwsxCostSpikeCmd.PersistentFlags().String("endDate", "", "aws endDate auth")
+	if err := GetCostSpikeCmd.MarkFlagRequired("serviceName"); err != nil {
+		fmt.Println(err)
+	}
+	GetCostSpikeCmd.Flags().StringP("granularity", "t", "", "granularity name")
+
+	if err := GetCostSpikeCmd.MarkFlagRequired("granularity"); err != nil {
+		fmt.Println(err)
+	}
+	GetCostSpikeCmd.Flags().StringP("startDate", "u", "", "startDate name")
+
+	if err := GetCostSpikeCmd.MarkFlagRequired("startDate"); err != nil {
+		fmt.Println(err)
+	}
+	GetCostSpikeCmd.Flags().StringP("endDate", "v", "", "endDate name")
+
+	if err := GetCostSpikeCmd.MarkFlagRequired("endDate"); err != nil {
+		fmt.Println(err)
+	}
 
 }
